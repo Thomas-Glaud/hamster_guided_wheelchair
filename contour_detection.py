@@ -1,5 +1,19 @@
 import cv2
-import math
+
+import serial
+import time
+
+port = 'CoM5'  # Update this to your actual COM port
+baudrate = 115200
+
+ser = serial.Serial(
+port='COM5',
+baudrate=115200,
+parity=serial.PARITY_NONE,
+stopbits=serial.STOPBITS_ONE,
+bytesize=serial.EIGHTBITS,
+timeout=1
+)
 
 def main():
 
@@ -7,7 +21,13 @@ def main():
     cap = cv2.VideoCapture(camera_index)
     ret, frame = cap.read()
 
-
+    try:
+        esp32 = serial.Serial(port='COM5', baudrate=115200, timeout=1)
+        time.sleep(2)
+    except serial.SerialException as e:
+        print(f"Error: Could not open serial port {port}. {e}")
+        return
+                
     
     # Check if the webcam resource was successfully gripped by OpenCV
     if not cap.isOpened():
@@ -56,14 +76,24 @@ def main():
             else:
                 position = "CENTER"
             
-            y_distance = f_height // 2 - y_center
+            y_distance = int(f_height // 2 - y_center)
             if abs(y_distance) > 100:
                 if y_distance > 0:
                     speed = "FORWARD"
                 else:
                     speed = "BACKWARD"
             
+            
             print(f"The hamster is in the {position} and moving {speed}.")
+
+            message = f"{position},{y_distance}\n"
+
+            try:
+                esp32.write(message.encode('utf-8'))
+            except serial.SerialException as e:
+                print(f"Error: Could not write to serial port {port}. {e}")
+                return
+
 
 
 
@@ -78,6 +108,8 @@ def main():
 
     cap.release()
     cv2.destroyAllWindows()
+    if 'esp32' in locals() and esp32.is_open:
+        esp32.close()
 
 
 if __name__ == "__main__":
