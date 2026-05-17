@@ -3,17 +3,7 @@ import cv2
 import serial
 import time
 
-port = 'CoM5'  # Update this to your actual COM port
-baudrate = 115200
-
-ser = serial.Serial(
-port='COM5',
-baudrate=115200,
-parity=serial.PARITY_NONE,
-stopbits=serial.STOPBITS_ONE,
-bytesize=serial.EIGHTBITS,
-timeout=1
-)
+port = 'COM5'  # Update this to your ESP32's serial port (e.g., 'COM3' on Windows or '/dev/ttyUSB0' on Linux)
 
 def main():
 
@@ -22,7 +12,7 @@ def main():
     ret, frame = cap.read()
 
     try:
-        esp32 = serial.Serial(port='COM5', baudrate=115200, timeout=1)
+        esp32 = serial.Serial(port, baudrate=115200, timeout=1)
         time.sleep(2)
     except serial.SerialException as e:
         print(f"Error: Could not open serial port {port}. {e}")
@@ -38,6 +28,7 @@ def main():
     print("Press 'q' in the graphics window to quit.")
 
     while True:
+        speed = 0
         ret, frame = cap.read()
         if not ret:
             print("Error: Failed to grab frame from camera.")   
@@ -52,7 +43,7 @@ def main():
 
         # 2. Thresholding: Turns the image purely black and white.
         # Adjust '100' depending on whether your hamster is darker or lighter than the floor.
-        _, thresh = cv2.threshold(blurred, 50, 255, cv2.THRESH_BINARY_INV)
+        _, thresh = cv2.threshold(blurred, 75, 255, cv2.THRESH_BINARY_INV)
 
         # 3. Find the boundaries of the shapes (contours)
         contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -84,7 +75,7 @@ def main():
                     speed = "BACKWARD"
             
             
-            print(f"The hamster is in the {position} and moving {speed}.")
+            print(f"The hamster is in the {position} and moving {speed} at {y_distance}")
 
             message = f"{position},{y_distance}\n"
 
@@ -100,7 +91,7 @@ def main():
         # Shows the actual tracking window
         cv2.imshow("Hamster Tracker", frame)
         # Visualizes exactly what the computer 'sees' to help you tune the threshold
-        cv2.imshow("Thresh Visual", thresh)
+        #cv2.imshow("Thresh Visual", thresh)
           
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
